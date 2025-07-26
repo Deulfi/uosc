@@ -712,7 +712,8 @@ function serialize_chapter_ranges(normalized_chapters)
 
 		-- Sponsor blocks
 		if config.chapter_ranges.ads then
-			local id = chapter.lowercase_title:match('segment start *%(([%w]%w-)%)')
+			local segment_type, id = chapter.lowercase_title:match('(.+) segment start *%(([%w]%w-)%)')
+			local config_key = segment_type and ('sponsor_' .. segment_type:lower():gsub(' ', '_')) or 'ads'
 			if id then -- ad range from sponsorblock
 				for j = i + 1, #chapters, 1 do
 					local end_chapter = chapters[j]
@@ -723,7 +724,7 @@ function serialize_chapter_ranges(normalized_chapters)
 							end_chapter = end_chapter,
 							start = chapter.time,
 							['end'] = end_chapter.time,
-						}, config.chapter_ranges.ads)
+						}, config.chapter_ranges[config_key] or config.chapter_ranges.ads)
 						ranges[#ranges + 1], sponsor_ranges[#sponsor_ranges + 1] = range, range
 						end_chapter.is_end_only = true
 						break
@@ -732,10 +733,15 @@ function serialize_chapter_ranges(normalized_chapters)
 			elseif not chapter.is_end_only and
 				(chapter.lowercase_title:find('%[sponsorblock%]:') or chapter.lowercase_title:find('^sponsors?')) then
 				local next_chapter = chapters[i + 1]
+				
+				-- Extract segment type from title
+				local segment_type = chapter.lowercase_title:match('%[sponsorblock%]: *(%w+)')
+				local config_key = segment_type and ('sponsor_' .. segment_type:lower():gsub(' ', '_')) or 'ads'
+				
 				ranges[#ranges + 1] = table_assign({
 					start = chapter.time,
 					['end'] = next_chapter and next_chapter.time or math.huge,
-				}, config.chapter_ranges.ads)
+				}, config.chapter_ranges[config_key] or config.chapter_ranges.ads)
 			end
 		end
 	end
